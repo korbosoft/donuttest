@@ -1,0 +1,7 @@
+build*
+*.elf
+*.dol
+*.gba
+*.map
+*.kate-swp
+*.zip
