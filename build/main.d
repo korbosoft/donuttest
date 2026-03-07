@@ -73,6 +73,7 @@ main.o: /home/korbo/wiidonut3d/source/main.c \
  /home/korbo/wiidonut3d/source/utililiys.h \
  /home/korbo/wiidonut3d/source/colors.h \
  /home/korbo/wiidonut3d/source/Torus_liym3q.h \
+ /home/korbo/wiidonut3d/build/shape_lut_bin.h \
  /home/korbo/wiidonut3d/build/music_mod.h
 /opt/devkitpro/libogc/include/gccore.h:
 /opt/devkitpro/libogc/include/ogc/dsp.h:
@@ -148,4 +149,5 @@ main.o: /home/korbo/wiidonut3d/source/main.c \
 /home/korbo/wiidonut3d/source/utililiys.h:
 /home/korbo/wiidonut3d/source/colors.h:
 /home/korbo/wiidonut3d/source/Torus_liym3q.h:
+/home/korbo/wiidonut3d/build/shape_lut_bin.h:
 /home/korbo/wiidonut3d/build/music_mod.h:
