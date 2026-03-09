@@ -27,11 +27,12 @@ static MODPlay play;
 
 static const char *splashMessages[SPLASH_COUNT] = {
 	[0] = "Also try DS Donut!",
-	[1] = "Better than Wii Donut! [citation needed]",
-	[2] = "oh man please to help i am not good with c",
-	[3] = "(\"Doughnut\" if you're british)",
-	[4] = "Korbo loves you <3",
-	[5] = "Did you know you can change the music?",
+	[1] = "Also try Lily Skate!",
+	[2] = "Better than Wii Donut! [citation needed]",
+	[3] = "oh man please to help i am not good with c",
+	[4] = "(\"Doughnut\" if you're british)",
+	[5] = "Korbo loves you <3",
+	[6] = "Did you know you can change the music?",
 };
 
 int main(int argc,char **argv) {
@@ -77,8 +78,6 @@ int main(int argc,char **argv) {
 	GRRLIB_SetLightAmbient(0x303030FF);
 	GX_SetChanMatColor(GX_COLOR0A0, LC_WHITE);
 	// char boobs[] = " -:=+>|%}Ics1aeCo34wSZkhAE&D$HWQ";
-
-	// gensqrtlut();
 
 	MODPlay_Init(&play);
 	MODPlay_SetMOD(&play, music_mod);
