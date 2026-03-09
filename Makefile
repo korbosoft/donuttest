@@ -23,12 +23,13 @@ DATA		:=	data
 TEXTURES	:=	textures
 ANIM            :=      anim
 INCLUDES	:=
+VERSION		:=	v5.0.0
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS	= -O3 -ffast-math -funsafe-math-optimizations -Wno-discarded-qualifiers $(MACHDEP) $(INCLUDE)
+CFLAGS	= -O3 -ffast-math -funsafe-math-optimizations -fexec-charset=CP437 -Wno-discarded-qualifiers -DVERSION=\"$(VERSION)\" $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=	$(CFLAGS)
 
 LDFLAGS	=	$(MACHDEP) -g -Wl,-Map,$(notdir $@).map
