@@ -1,11 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1">
-	<name>3D Donut</name>
-	<version>1.0</version>
-	<release_date>20250828000000</release_date>
-	<coder>Lily</coder>
-	<short_description>Wii Donut but in 3D</short_description>
-	<long_description>The background song is Addiction by Jogeir Liljedahl.
+	<name>Korbo's Wii Donut Mod</name>
+	<version>5.0.0</version>
+	<release_date>20260219000000</release_date>
+	<coder>Korbosoft, emilydaemon, Andy Sloane</coder>
+	<short_description>Korbo's spinning donut!</short_description>
+	<long_description>Korbo's world-famous* donut shop is always open!
+
+*Donut shop may or may not actually be world-famous.
+None of this would have ever happened without "Wii Donut" by emilydaemon, and xOx-Liy-Codez-XD-oXo helped me a ton getting this to initially work.
+
+GBA Donut requires a GBA link cable plugged in the 2nd controller port.
+
+Music can be changed by adding a "music.(mod/it/s3m/xm/etc.)" file in the app directory.
+This program supports *most* tracker music formats.
+
+e-mail:
+Korbo:       korbin.m.marshall@gmail.com
+
+The background song is "Addiction" by Jogeir Liljedahl.
 </long_description>
 </app>
-
