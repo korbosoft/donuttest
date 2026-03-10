@@ -108,7 +108,7 @@ int main(int argc,char **argv) {
 
 		printf("\e[23;0H" "\e[104;37m"
 		"╔═══════════════════════════════════════════════════════════════════════════╗"
-		"║ \e[4mKorbo's Wii Donut Mod %s   %s\e[0m\e[104;37m "                      "║"
+		"║ \e[4mKorbo's Donut Shop :3 %s   %s\e[0m\e[104;37m "                      "║"
 		"║ Based on the original donut.c by Andy Sloane <andy@a1k0n.net>             ║"
 		"║ Ported by emilydaemon <emilydaemon@donut.eu.org>, Modified by Korbo       ║"
 		"║ Default Music by Jogeir Liljedahl                 " STRING_CONTROLS     " ║"
