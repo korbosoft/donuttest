@@ -11,6 +11,53 @@
 u16 width = DONUT_WIDTH * 2;
 GRRLIB_texImg *donutBuffer;
 
+void draw_frosting(f32 minor, f32 major, int nsides, int rings, u32 col) {
+    const f32 ringDelta = 2.0 * M_PI / rings;
+    const f32 sideDelta = M_PI / nsides;
+    const f32 waveAmp = 0.5f;
+    const f32 waveFreq = 9.0f;
+    minor += 0.1;
+    major += 0.1;
+
+
+    for (int i = 0; i < rings; i++) {
+        f32 theta = i * ringDelta;
+        f32 theta1 = theta + ringDelta;
+
+        f32 cosTheta = cosf(theta), sinTheta = sinf(theta);
+        f32 cosTheta1 = cosf(theta1), sinTheta1 = sinf(theta1);
+
+        f32 cutZ0 = waveAmp * sinf(theta * waveFreq);
+        f32 cutZ1 = waveAmp * sinf(theta1 * waveFreq);
+
+        GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 2 * (nsides + 1));
+        for (int j = 0; j <= nsides; j++) {
+            f32 progress = (f32)j / (f32)nsides;
+            f32 phi = progress * M_PI;
+
+            f32 curve = sqrt(1.0 - progress*progress);
+            f32 scaledMinor = minor * curve;
+            f32 scaledMajor = major * curve;
+            f32 cosPhi = cosf(phi), sinPhi = sinf(phi);
+            f32 dist = scaledMajor + scaledMinor * cosPhi;
+
+            f32 z = minor * sinPhi;
+            if (z < cutZ1) z = cutZ1;
+
+            GX_Position3f32(cosTheta1 * dist, -sinTheta1 * dist, z);
+            GX_Normal3f32(cosTheta1 * cosPhi, -sinTheta1 * cosPhi, sinPhi);
+            GX_Color1u32(col);
+
+            if (z < cutZ0) z = cutZ0;
+
+            GX_Position3f32(cosTheta * dist, -sinTheta * dist, z);
+            GX_Normal3f32(cosTheta * cosPhi, -sinTheta * cosPhi, sinPhi);
+            GX_Color1u32(col);
+        }
+        GX_End();
+    }
+}
+
 void donut_init(void) {
     donutBuffer = GRRLIB_CreateEmptyTexture(width + (width % 4), DONUT_HEIGHT * 4);
 }
@@ -32,6 +79,7 @@ void draw_donut(float A, float B) {
     GX_LoadNrmMtxImm(model, GX_PNMTX0);
     GX_SetCurrentMtx(GX_PNMTX0);
     GRRLIB_DrawTorus(1, 2, 64, 128, true, 0xFFFFFFFF);
+    draw_frosting(1, 2, 64, 128, 0xFF00FFFF);
 
     GX_SetViewport(0,0, DONUT_WIDTH * 2, DONUT_HEIGHT * 4, 0, 1);
     GX_SetScissor(0,0, DONUT_WIDTH * 2, DONUT_HEIGHT * 4);

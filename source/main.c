@@ -23,7 +23,7 @@
 static void *cxfb = NULL;
 static MODPlay play;
 
-#define SPLASH_COUNT 6
+#define SPLASH_COUNT 7
 
 static const char *splashMessages[SPLASH_COUNT] = {
 	[0] = "Also try DS Donut!",
