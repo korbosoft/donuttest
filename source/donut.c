@@ -5,41 +5,45 @@
 
 #include "donut.h"
 #include "grrproxy.h"
+#include "flavors.h"
 
 #include "shape_lut_bin.h"
 
 u16 width = DONUT_WIDTH * 2;
 GRRLIB_texImg *donutBuffer;
 
-void draw_frosting(f32 minor, f32 major, int nsides, int rings, u32 col) {
-    const f32 ringDelta = 2.0 * M_PI / rings;
+void draw_frosting(f32 minor, f32 major, int nsides, int rings, bool filled, u32 col) {
+    const f32 ringDelta = 2.0f * M_PI / rings;
     const f32 sideDelta = M_PI / nsides;
     const f32 waveAmp = 0.5f;
     const f32 waveFreq = 9.0f;
-    minor += 0.1;
-    major += 0.1;
+
+    const f32 rdC = cosf(ringDelta);
+    const f32 rdS = sinf(ringDelta);
+    const f32 sdC = cosf(sideDelta);
+    const f32 sdS = sinf(sideDelta);
 
 
+    f32 cosTheta = 1.0f;
+    f32 sinTheta = 0.0f;
+    f32 theta = 0.0f;
     for (int i = 0; i < rings; i++) {
-        f32 theta = i * ringDelta;
-        f32 theta1 = theta + ringDelta;
-
-        f32 cosTheta = cosf(theta), sinTheta = sinf(theta);
-        f32 cosTheta1 = cosf(theta1), sinTheta1 = sinf(theta1);
+        const f32 theta1 = theta + ringDelta;
+        f32 cosTheta1 = cos(theta1);
+        f32 sinTheta1 = sin(theta1);
 
         f32 cutZ0 = waveAmp * sinf(theta * waveFreq);
         f32 cutZ1 = waveAmp * sinf(theta1 * waveFreq);
 
-        GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 2 * (nsides + 1));
-        for (int j = 0; j <= nsides; j++) {
-            f32 progress = (f32)j / (f32)nsides;
-            f32 phi = progress * M_PI;
+        GX_Begin(filled ? GX_TRIANGLESTRIP : GX_LINESTRIP, GX_VTXFMT0, 2 * (nsides + 1));
 
-            f32 curve = sqrt(1.0 - progress*progress);
-            f32 scaledMinor = minor * curve;
-            f32 scaledMajor = major * curve;
+        f32 cosPhi = 1.0f; // sin(0)
+        f32 sinPhi = 0.0f; // cos(0)
+        f32 phi = 0.0f;
+        for (int j = 0; j <= nsides; j++) {
+            phi += sideDelta;
             f32 cosPhi = cosf(phi), sinPhi = sinf(phi);
-            f32 dist = scaledMajor + scaledMinor * cosPhi;
+            f32 dist = major + minor * cosPhi;
 
             f32 z = minor * sinPhi;
             if (z < cutZ1) z = cutZ1;
@@ -55,6 +59,10 @@ void draw_frosting(f32 minor, f32 major, int nsides, int rings, u32 col) {
             GX_Color1u32(col);
         }
         GX_End();
+
+        cosTheta = cosTheta1;
+        sinTheta = sinTheta1;
+        theta = theta1;
     }
 }
 
@@ -66,7 +74,7 @@ void donut_exit(void) {
     GRRLIB_FreeTexture(donutBuffer);
 }
 
-void draw_donut(float A, float B) {
+void render_frame(float A, float B, Donut flavor) {
     Mtx model, model2;
 
     guMtxRotRad(model, 'x', A);
@@ -78,8 +86,8 @@ void draw_donut(float A, float B) {
     GX_LoadPosMtxImm(model, GX_PNMTX0);
     GX_LoadNrmMtxImm(model, GX_PNMTX0);
     GX_SetCurrentMtx(GX_PNMTX0);
-    GRRLIB_DrawTorus(1, 2, 64, 128, true, 0xFFFFFFFF);
-    draw_frosting(1, 2, 64, 128, 0xFF00FFFF);
+    GRRLIB_DrawTorus(1, 2, 64, 128, true, RGBA(flavor.bottom.r, flavor.bottom.g, flavor.bottom.b, 255));
+    draw_frosting(1, 2, 64, 128, true, RGBA(flavor.top.r, flavor.top.g, flavor.top.b, 255));
 
     GX_SetViewport(0,0, DONUT_WIDTH * 2, DONUT_HEIGHT * 4, 0, 1);
     GX_SetScissor(0,0, DONUT_WIDTH * 2, DONUT_HEIGHT * 4);

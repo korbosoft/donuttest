@@ -2,9 +2,9 @@ import re
 import numpy
 import struct
 
-def get_16bit_signatures(font):
+def get_signatures(font):
     signatures = []
-    for code in range(32, 127):
+    for code in range(32, 126):
         if code >= len(font):
             break
 
@@ -15,7 +15,7 @@ def get_16bit_signatures(font):
         sig_vector = []
         for r_block in numpy.array_split(bits, 4, axis=0):
             for c_block in numpy.array_split(r_block, 2, axis=1):
-                val = int(round(numpy.mean(c_block) * 3))
+                val = int(round(numpy.mean(c_block) * 255))
                 sig_vector.append(val)
 
         signatures.append((code, sig_vector))
@@ -25,7 +25,7 @@ def create_ascii_lut(signatures):
     lut = [0] * 65536
 
     for pattern in range(65536):
-        target = [(pattern >> (i * 2)) & 0x03 for i in range(8)]
+        target = [((pattern >> (i * 2)) & 0x03) * 85 for i in range(8)]
 
         best_char = 32
         min_diff = float('inf')
@@ -61,7 +61,7 @@ if __name__ == "__main__":
         print("console_font_8x16.c not found :(")
         exit()
 
-    sigs = get_16bit_signatures(font)
+    sigs = get_signatures(font)
     print('font signatures are done, making lut now...')
 
     lut = create_ascii_lut(sigs)

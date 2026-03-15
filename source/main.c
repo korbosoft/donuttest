@@ -14,6 +14,7 @@
 #include "grrproxy.h"
 #include "strings.h"
 #include "text.h"
+#include "flavors.h"
 
 #include "music_mod.h"
 
@@ -102,7 +103,7 @@ int main(int argc,char **argv) {
 		guVecMultiply(view, &lpos, &lpos);
 		GRRLIB_SetLightDiff(0, (guVector){0, 0, 0}, 0.5f, 0.998f, 0xFFFFFFFF);
 
-		draw_donut(A, B);
+		render_frame(A, B, frosting[1]);
 
 		WPAD_ScanPads();
 
