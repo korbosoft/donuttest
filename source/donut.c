@@ -9,41 +9,37 @@
 
 #include "shape_lut_bin.h"
 
-u16 width = DONUT_WIDTH * 2;
-GRRLIB_texImg *donutBuffer;
+#include "grey_png.h"
+#include "rainbow_png.h"
+
+static GRRLIB_texImg *donutBuffer;
+static GRRLIB_texImg *rainbowTex;
+static GRRLIB_texImg *greyTex;
 
 void draw_frosting(f32 minor, f32 major, int nsides, int rings, bool filled, u32 col) {
     const f32 ringDelta = 2.0f * M_PI / rings;
     const f32 sideDelta = M_PI / nsides;
     const f32 waveAmp = 0.5f;
-    const f32 waveFreq = 9.0f;
-
-    const f32 rdC = cosf(ringDelta);
-    const f32 rdS = sinf(ringDelta);
-    const f32 sdC = cosf(sideDelta);
-    const f32 sdS = sinf(sideDelta);
-
+    const f32 waveFreq = 8.0f;
 
     f32 cosTheta = 1.0f;
     f32 sinTheta = 0.0f;
     f32 theta = 0.0f;
     for (int i = 0; i < rings; i++) {
         const f32 theta1 = theta + ringDelta;
-        f32 cosTheta1 = cos(theta1);
-        f32 sinTheta1 = sin(theta1);
+        const f32 cosTheta1 = cos(theta1);
+        const f32 sinTheta1 = sin(theta1);
 
-        f32 cutZ0 = waveAmp * sinf(theta * waveFreq);
-        f32 cutZ1 = waveAmp * sinf(theta1 * waveFreq);
+        const f32 cutZ0 = waveAmp * sinf(theta * waveFreq);
+        const f32 cutZ1 = waveAmp * sinf(theta1 * waveFreq);
 
         GX_Begin(filled ? GX_TRIANGLESTRIP : GX_LINESTRIP, GX_VTXFMT0, 2 * (nsides + 1));
 
-        f32 cosPhi = 1.0f; // sin(0)
-        f32 sinPhi = 0.0f; // cos(0)
         f32 phi = 0.0f;
         for (int j = 0; j <= nsides; j++) {
             phi += sideDelta;
-            f32 cosPhi = cosf(phi), sinPhi = sinf(phi);
-            f32 dist = major + minor * cosPhi;
+            const f32 cosPhi = cosf(phi), sinPhi = sinf(phi);
+            const f32 dist = major + minor * cosPhi;
 
             f32 z = minor * sinPhi;
             if (z < cutZ1) z = cutZ1;
@@ -57,6 +53,7 @@ void draw_frosting(f32 minor, f32 major, int nsides, int rings, bool filled, u32
             GX_Position3f32(cosTheta * dist, -sinTheta * dist, z);
             GX_Normal3f32(cosTheta * cosPhi, -sinTheta * cosPhi, sinPhi);
             GX_Color1u32(col);
+
         }
         GX_End();
 
@@ -67,25 +64,71 @@ void draw_frosting(f32 minor, f32 major, int nsides, int rings, bool filled, u32
 }
 
 void donut_init(void) {
-    donutBuffer = GRRLIB_CreateEmptyTexture(width + (width % 4), DONUT_HEIGHT * 4);
+    donutBuffer = GRRLIB_CreateEmptyTexture(DONUT_WIDTH * 2 + DONUT_WIDTH * 2 % 4, DONUT_HEIGHT * 4);
+    rainbowTex = GRRLIB_LoadTexturePNG(rainbow_png);
+    greyTex = GRRLIB_LoadTexturePNG(grey_png);
 }
 
 void donut_exit(void) {
     GRRLIB_FreeTexture(donutBuffer);
 }
 
+void setReflectiveTexture(GRRLIB_texImg *tex, bool rep) {
+    GXTexObj texObj;
+
+    GX_SetNumTexGens(1);
+    GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX3x4, GX_TG_NRM, GX_TEXMTX0);
+    if (rep == true) {
+        GX_InitTexObj(&texObj, tex->data, tex->w, tex->h, tex->format, GX_REPEAT, GX_REPEAT, GX_FALSE);
+    } else {
+        GX_InitTexObj(&texObj, tex->data, tex->w, tex->h, tex->format, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    }
+    if (GRRLIB_Settings.antialias == false) {
+        GX_InitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, 0, 0, GX_ANISO_1);
+        GX_SetCopyFilter(GX_FALSE, rmode->sample_pattern, GX_FALSE, rmode->vfilter);
+    } else {
+        GX_SetCopyFilter(rmode->aa, rmode->sample_pattern, GX_TRUE, rmode->vfilter);
+    }
+
+    GX_SetNumTevStages(2);
+    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0 );
+    GX_SetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR1A1 );
+    GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+    GX_SetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV );
+    GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_RASC, GX_CC_TEXC, GX_CC_ZERO);
+
+    GX_LoadTexObj(&texObj,      GX_TEXMAP0);
+}
+
 void render_frame(float A, float B, Donut flavor) {
-    Mtx model, model2;
+    Mtx model, model2, viewreflec;
+
+    guMtxCopy(view, viewreflec);
+    viewreflec[0][3] = 0.0f;
+    viewreflec[1][3] = 0.0f;
+    viewreflec[2][3] = 0.0f;
 
     guMtxRotRad(model, 'x', A);
     guMtxRotRad(model2, 'z', B);
     guMtxConcat(model2, model, model);
     guMtxTransApply(model, model, 0.0f, 0.0f, -(3.0f / sinf(DegToRad(DONUT_FOV) / 2.0f)));
     guMtxConcat(view,model,model);
-    // load the modelview matrix into matrix memory
+
     GX_LoadPosMtxImm(model, GX_PNMTX0);
     GX_LoadNrmMtxImm(model, GX_PNMTX0);
     GX_SetCurrentMtx(GX_PNMTX0);
+
+    guMtxConcat(viewreflec, model, model);
+    guMtxScaleApply(model, model, 0.5f, -0.5f, 0.0f);
+    guMtxTransApply(model, model, 0.5f, 0.5f, 1.0f);
+    GX_LoadTexMtxImm(model, GX_TEXMTX0, GX_MTX3x4);
+
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+
+    setReflectiveTexture((flavor.special == RAINBOW) ? rainbowTex : greyTex, true);
+
     GRRLIB_DrawTorus(1, 2, 64, 128, true, RGBA(flavor.bottom.r, flavor.bottom.g, flavor.bottom.b, 255));
     draw_frosting(1, 2, 64, 128, true, RGBA(flavor.top.r, flavor.top.g, flavor.top.b, 255));
 

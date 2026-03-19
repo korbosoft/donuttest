@@ -3,7 +3,7 @@
 
 #include "flavors.h"
 
-#define DONUT_WIDTH 75
+#define DONUT_WIDTH 77
 #define DONUT_HEIGHT 22
 #define DONUT_FOV 45
 

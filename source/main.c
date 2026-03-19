@@ -12,6 +12,7 @@
 #include "colors.h"
 #include "donut.h"
 #include "grrproxy.h"
+#include "input.h"
 #include "strings.h"
 #include "text.h"
 #include "flavors.h"
@@ -23,6 +24,9 @@
 // static GXRModeObj *rmode = NULL;
 static void *cxfb = NULL;
 static MODPlay play;
+
+static bool paused = true;
+static u8 frostingFlavor = 0;
 
 #define SPLASH_COUNT 7
 
@@ -38,20 +42,13 @@ static const char *splashMessages[SPLASH_COUNT] = {
 
 int main(int argc,char **argv) {
 	char splash[43], title[82], frostingName[82], doughName[82];
-	f32 yscale = 0;
-	u32 xfbHeight;
-	u32 fb = 0;
-	u64 frame = 0;
-	Mtx view;
-	Mtx44 perspective;
-	void *gpfifo = NULL;
-	guVector cam = {0.0F, 0.0F, 0.0F},
-	up = {0.0F, 1.0F, 0.0F},
-	look = {0.0F, 0.0F, -1.0F};
+	bool showControls = false;
+	guVector lpos = {2.0f, 2.0f, 2.0f};
+	GXLightObj lobj;
 
 	GRRLIB_Init();
 
-	WPAD_Init();
+	input_init();
 	// WPAD_SetDataFormat(WPAD_CHAN_ALL, WPAD_FMT_BTNS_ACC);
 
 	AESND_Init();
@@ -75,16 +72,19 @@ int main(int argc,char **argv) {
 
 	float donAspect = aspect;
 
-	donAspect *= 75.0f / 44.0f; // effectively halves the width to match the character aspect
-	GRRLIB_SetLightAmbient(0x303030FF);
-	GX_SetChanMatColor(GX_COLOR0A0, LC_WHITE);
+	donAspect *= 77.0f / 44.0f; // effectively halves the width to match the character aspect
 	// char boobs[] = " -:=+>|%}Ics1aeCo34wSZkhAE&D$HWQ";
 
 	MODPlay_Init(&play);
 	MODPlay_SetMOD(&play, music_mod);
 	MODPlay_SetVolume(&play,63,63);
 	MODPlay_Start(&play);
-	PROXY_3dMode(0.1F, 300.0F, 45, false, true, donAspect);
+	PROXY_3dMode(0.1F, 300.0F, 45, true, false, donAspect);
+	// Define exactly what the CPU is sending to the GPU
+	GX_SetVtxDesc(GX_VA_POS,  GX_DIRECT);
+	GX_SetVtxDesc(GX_VA_NRM,  GX_DIRECT);
+	GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+	GX_SetVtxDesc(GX_VA_TEX0, GX_NONE); // CRITICAL: Tell the GPU NO texcoords are in the stream
 	PROXY_Camera3dSettings(0.0f,0.0f,0.0f, 0,1,0, 0,0,0);
 
 	donut_init();
@@ -97,27 +97,47 @@ int main(int argc,char **argv) {
 		format_splash("This splash has a 1/50 chance of appearing", splash);
 	}
 
+	u8 showFrosting = 0;
 	while(SYS_MainLoop()) {
-		GXLightObj lobj;
-		guVector lpos = {2.0f, 2.0f, 2.0f};
+		GX_SetNumChans(1);
 		guVecMultiply(view, &lpos, &lpos);
-		GRRLIB_SetLightDiff(0, (guVector){0, 0, 0}, 0.5f, 0.998f, 0xFFFFFFFF);
 
-		render_frame(A, B, frosting[1]);
+		GX_InitLightPos(&lobj,lpos.x,lpos.y,lpos.z);
+		GX_InitLightColor(&lobj, LC_WHITE);
+		GX_InitLightDistAttn(&lobj, 0.5f, 0.5f, GX_DA_MEDIUM);
+		GX_LoadLightObj(&lobj,GX_LIGHT0);
 
-		WPAD_ScanPads();
+		GX_SetChanAmbColor(GX_COLOR0A0, LC_DARKER);
+		GX_SetChanCtrl(GX_COLOR0A0, GX_ENABLE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT0, GX_DF_CLAMP, GX_AF_NONE);
+
+		render_frame(A, B, frosting[frostingFlavor]);
+
+		input_scan();
+		input_down(0, 0);
 
 		printf("\e[23;0H" "\e[104;37m"
 		"╔═══════════════════════════════════════════════════════════════════════════╗"
-		"║ \e[4mKorbo's Donut Shop :3 %s   %s\e[0m\e[104;37m "                      "║"
-		"║ Based on the original donut.c by Andy Sloane <andy@a1k0n.net>             ║"
-		"║ Ported by emilydaemon <emilydaemon@donut.eu.org>, Modified by Korbo       ║"
+		"║ \e[4mKorbo's Donut Shop %s :3   %s\e[0m\e[104;37m "                      "║"
+		"║ i'm gonna have to find something to put here lol. z'spikhrgzFE'p;kiaol wg ║"
+		"║ Written by Korbo                                                          ║"
 		"║ Default Music by Jogeir Liljedahl                 " STRING_CONTROLS     " ║"
 		"╚═══════════════════════════════════════════════════════════════════════════╝\e[40m", VERSION, splash);
 
+		if (showFrosting)
+			showFrosting--;
+
+		format_info("Flavor: ", frosting[frostingFlavor].name, frostingName);
+		printf("\e[0;0H" "%s" "\e[0;0m", (showFrosting != 0) ? frostingName : title);
+
 		VIDEO_Flush();
 		VIDEO_WaitVSync();
-		if(WPAD_ButtonsDown(0) & WPAD_BUTTON_HOME) break;
+		if (wiiPressed & WPAD_BUTTON_HOME) {
+			break;
+		} else if ((wiiPressed & WPAD_BUTTON_PLUS) | (GCPressed & PAD_BUTTON_Y)) {
+			frostingFlavor++;
+			frostingFlavor %= FROSTING_FLAVORS;
+			showFrosting = 50;
+		}
 
 		A += 0.035f;
 		B += 0.01f;

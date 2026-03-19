@@ -1,14 +1,14 @@
 #ifndef FLAVORS_H
 #define FLAVORS_H
 
-#define FROSTING_FLAVORS 18
+#define FROSTING_FLAVORS 17
 
 enum DonutSpecial {
 	NORMAL,
 	RAINBOW,
 	GHOSTLY,
 	RADIOACTIVE,
-	ANSISHADED,
+	ANSICOLORED,
 };
 
 typedef struct {
@@ -117,15 +117,9 @@ static const Donut frosting[FROSTING_FLAVORS] = {
 	},
 	{
 		"Rainbow",
-		{255, 0, 255},
-		{255, 0, 255},
+		{255, 255, 255},
+		{255, 255, 255},
 		RAINBOW
-	},
-	{
-		"ANSI",
-		{255, 0, 255},
-		{255, 0, 255},
-		ANSISHADED
 	}
 };
 
